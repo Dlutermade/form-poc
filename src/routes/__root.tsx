@@ -1,6 +1,7 @@
 import { Outlet, createRootRouteWithContext } from '@tanstack/react-router'
 import { TanStackRouterDevtoolsPanel } from '@tanstack/react-router-devtools'
 import { TanStackDevtools } from '@tanstack/react-devtools'
+import { formDevtoolsPlugin } from '@tanstack/react-form-devtools'
 
 import Header from '../components/Header'
 
@@ -27,6 +28,7 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
             render: <TanStackRouterDevtoolsPanel />,
           },
           TanStackQueryDevtools,
+          formDevtoolsPlugin(),
         ]}
       />
     </>
