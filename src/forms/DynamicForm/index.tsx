@@ -195,7 +195,11 @@ const DynamicForm = () => {
                     )}
                   </form.Field>
                   <form.Subscribe
-                    selector={(state) => state.values.recurringType}
+                    selector={(state) =>
+                      'recurringType' in state.values
+                        ? state.values.recurringType
+                        : undefined
+                    }
                   >
                     {(recurringType) => {
                       if (recurringType === 'weekly') {
