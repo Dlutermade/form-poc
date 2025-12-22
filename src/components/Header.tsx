@@ -112,6 +112,45 @@ export default function Header() {
           </Link>
 
           {/* Demo Links End */}
+
+          <Link
+            to="/bill-demo/simple"
+            onClick={() => setIsOpen(false)}
+            className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-800 transition-colors mt-4"
+            activeProps={{
+              className:
+                'flex items-center gap-3 p-3 rounded-lg bg-cyan-600 hover:bg-cyan-700 transition-colors mt-4',
+            }}
+          >
+            <ClipboardType size={20} />
+            <span className="font-medium">Bill Demo Simple Form</span>
+          </Link>
+
+          <Link
+            to="/bill-demo/array"
+            onClick={() => setIsOpen(false)}
+            className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-800 transition-colors"
+            activeProps={{
+              className:
+                'flex items-center gap-3 p-3 rounded-lg bg-cyan-600 hover:bg-cyan-700 transition-colors',
+            }}
+          >
+            <ClipboardType size={20} />
+            <span className="font-medium">Bill Demo Array Form</span>
+          </Link>
+
+          <Link
+            to="/bill-demo/dynamic"
+            onClick={() => setIsOpen(false)}
+            className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-800 transition-colors"
+            activeProps={{
+              className:
+                'flex items-center gap-3 p-3 rounded-lg bg-cyan-600 hover:bg-cyan-700 transition-colors',
+            }}
+          >
+            <ClipboardType size={20} />
+            <span className="font-medium">Bill Demo Dynamic Form</span>
+          </Link>
         </nav>
       </aside>
     </>

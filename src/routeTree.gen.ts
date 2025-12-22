@@ -12,6 +12,9 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as DemoTanstackQueryRouteImport } from './routes/demo/tanstack-query'
 import { Route as DemoTableRouteImport } from './routes/demo/table'
+import { Route as BillDemoSimpleIndexRouteImport } from './routes/bill-demo/simple/index'
+import { Route as BillDemoDynamicIndexRouteImport } from './routes/bill-demo/dynamic/index'
+import { Route as BillDemoArrayIndexRouteImport } from './routes/bill-demo/array/index'
 import { Route as DemoFormSimpleRouteImport } from './routes/demo/form.simple'
 import { Route as DemoFormAddressRouteImport } from './routes/demo/form.address'
 
@@ -28,6 +31,21 @@ const DemoTanstackQueryRoute = DemoTanstackQueryRouteImport.update({
 const DemoTableRoute = DemoTableRouteImport.update({
   id: '/demo/table',
   path: '/demo/table',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const BillDemoSimpleIndexRoute = BillDemoSimpleIndexRouteImport.update({
+  id: '/bill-demo/simple/',
+  path: '/bill-demo/simple/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const BillDemoDynamicIndexRoute = BillDemoDynamicIndexRouteImport.update({
+  id: '/bill-demo/dynamic/',
+  path: '/bill-demo/dynamic/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const BillDemoArrayIndexRoute = BillDemoArrayIndexRouteImport.update({
+  id: '/bill-demo/array/',
+  path: '/bill-demo/array/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const DemoFormSimpleRoute = DemoFormSimpleRouteImport.update({
@@ -47,6 +65,9 @@ export interface FileRoutesByFullPath {
   '/demo/tanstack-query': typeof DemoTanstackQueryRoute
   '/demo/form/address': typeof DemoFormAddressRoute
   '/demo/form/simple': typeof DemoFormSimpleRoute
+  '/bill-demo/array': typeof BillDemoArrayIndexRoute
+  '/bill-demo/dynamic': typeof BillDemoDynamicIndexRoute
+  '/bill-demo/simple': typeof BillDemoSimpleIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -54,6 +75,9 @@ export interface FileRoutesByTo {
   '/demo/tanstack-query': typeof DemoTanstackQueryRoute
   '/demo/form/address': typeof DemoFormAddressRoute
   '/demo/form/simple': typeof DemoFormSimpleRoute
+  '/bill-demo/array': typeof BillDemoArrayIndexRoute
+  '/bill-demo/dynamic': typeof BillDemoDynamicIndexRoute
+  '/bill-demo/simple': typeof BillDemoSimpleIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -62,6 +86,9 @@ export interface FileRoutesById {
   '/demo/tanstack-query': typeof DemoTanstackQueryRoute
   '/demo/form/address': typeof DemoFormAddressRoute
   '/demo/form/simple': typeof DemoFormSimpleRoute
+  '/bill-demo/array/': typeof BillDemoArrayIndexRoute
+  '/bill-demo/dynamic/': typeof BillDemoDynamicIndexRoute
+  '/bill-demo/simple/': typeof BillDemoSimpleIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -71,6 +98,9 @@ export interface FileRouteTypes {
     | '/demo/tanstack-query'
     | '/demo/form/address'
     | '/demo/form/simple'
+    | '/bill-demo/array'
+    | '/bill-demo/dynamic'
+    | '/bill-demo/simple'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -78,6 +108,9 @@ export interface FileRouteTypes {
     | '/demo/tanstack-query'
     | '/demo/form/address'
     | '/demo/form/simple'
+    | '/bill-demo/array'
+    | '/bill-demo/dynamic'
+    | '/bill-demo/simple'
   id:
     | '__root__'
     | '/'
@@ -85,6 +118,9 @@ export interface FileRouteTypes {
     | '/demo/tanstack-query'
     | '/demo/form/address'
     | '/demo/form/simple'
+    | '/bill-demo/array/'
+    | '/bill-demo/dynamic/'
+    | '/bill-demo/simple/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -93,6 +129,9 @@ export interface RootRouteChildren {
   DemoTanstackQueryRoute: typeof DemoTanstackQueryRoute
   DemoFormAddressRoute: typeof DemoFormAddressRoute
   DemoFormSimpleRoute: typeof DemoFormSimpleRoute
+  BillDemoArrayIndexRoute: typeof BillDemoArrayIndexRoute
+  BillDemoDynamicIndexRoute: typeof BillDemoDynamicIndexRoute
+  BillDemoSimpleIndexRoute: typeof BillDemoSimpleIndexRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -118,6 +157,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DemoTableRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/bill-demo/simple/': {
+      id: '/bill-demo/simple/'
+      path: '/bill-demo/simple'
+      fullPath: '/bill-demo/simple'
+      preLoaderRoute: typeof BillDemoSimpleIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/bill-demo/dynamic/': {
+      id: '/bill-demo/dynamic/'
+      path: '/bill-demo/dynamic'
+      fullPath: '/bill-demo/dynamic'
+      preLoaderRoute: typeof BillDemoDynamicIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/bill-demo/array/': {
+      id: '/bill-demo/array/'
+      path: '/bill-demo/array'
+      fullPath: '/bill-demo/array'
+      preLoaderRoute: typeof BillDemoArrayIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/demo/form/simple': {
       id: '/demo/form/simple'
       path: '/demo/form/simple'
@@ -141,6 +201,9 @@ const rootRouteChildren: RootRouteChildren = {
   DemoTanstackQueryRoute: DemoTanstackQueryRoute,
   DemoFormAddressRoute: DemoFormAddressRoute,
   DemoFormSimpleRoute: DemoFormSimpleRoute,
+  BillDemoArrayIndexRoute: BillDemoArrayIndexRoute,
+  BillDemoDynamicIndexRoute: BillDemoDynamicIndexRoute,
+  BillDemoSimpleIndexRoute: BillDemoSimpleIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
