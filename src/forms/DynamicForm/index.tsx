@@ -50,7 +50,22 @@ const DynamicForm = () => {
           form.handleSubmit()
         }}
       >
-        <form.Field name="mode">
+        <form.Field
+          name="mode"
+          listeners={{
+            onMount: (props) => {
+              if (!('recurringType' in props.fieldApi.form.state.values)) {
+                // set default recurringType when mode is changed to recurring
+                props.fieldApi.form.setFieldValue('recurringType', 'weekly')
+                props.fieldApi.form.setFieldValue('time', [])
+                props.fieldApi.form.setFieldValue('daysOfWeek', [])
+                props.fieldApi.form.setFieldValue('daysOfMonth', [])
+                props.fieldApi.form.setFieldValue('yearlyMonths', [])
+                props.fieldApi.form.setFieldValue('yearlyDays', [])
+              }
+            },
+          }}
+        >
           {(field) => (
             <div className="mb-4">
               <label htmlFor={field.name}>Mode</label>
@@ -183,13 +198,28 @@ const DynamicForm = () => {
                   )}
                 </form.Field>
                 <form.Subscribe
-                  selector={(state) => state.values.recurringType}
+                  selector={(state) =>
+                    'recurringType' in state.values
+                      ? state.values.recurringType
+                      : null
+                  }
                 >
                   {(recurringType) => {
                     if (recurringType === 'weekly') {
                       return (
                         <div className="mt-4">
-                          <form.Field name="daysOfWeek">
+                          <form.Field
+                            name="daysOfWeek"
+                            listeners={{
+                              onMount: (props) => {
+                                // reset daysOfWeek by each mount for switching recurringType
+                                props.fieldApi.form.setFieldValue(
+                                  'daysOfWeek',
+                                  [],
+                                )
+                              },
+                            }}
+                          >
                             {(field) => (
                               <div className="mb-4">
                                 <label htmlFor={field.name}>

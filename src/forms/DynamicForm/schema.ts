@@ -22,12 +22,12 @@ import z from 'zod'
 
 import {
   array,
+  check,
   custom,
   isoDateTime,
   isoTimeSecond,
-  maxValue,
+  literal,
   minLength,
-  minValue,
   number,
   object,
   optional,
@@ -35,6 +35,7 @@ import {
   pipe,
   rawCheck,
   string,
+  variant,
 } from 'valibot'
 import type { InferOutput } from 'valibot'
 
@@ -160,7 +161,110 @@ export const dynamicFormZodSchema = z
 
 type DynamicZodFormType = z.infer<typeof dynamicFormZodSchema>
 
-const dynamicFormSchema = pipe(
+const onceFormSchema = pipe(
+  object({
+    mode: literal('once'),
+    // recurringType: literal(''),
+    datetime: pipe(
+      string(),
+      minLength(1, 'Datetime is required'),
+      isoDateTime('Invalid datetime format'),
+      custom<string>((value) => {
+        const currentDate = new Date()
+        const selectedDateTime = new Date(value as string)
+        if (selectedDateTime <= currentDate) {
+          return false
+        }
+        return true
+      }, 'Datetime must be after current time'),
+    ),
+  }),
+)
+
+const recurringBaseFields = {
+  mode: literal('recurring'),
+  time: pipe(
+    array(pipe(string(), isoTimeSecond('Invalid time format'))),
+    minLength(1, 'At least one time is required'),
+  ),
+}
+const recurringWeeklyFormSchema = object({
+  ...recurringBaseFields,
+  recurringType: literal('weekly'),
+  daysOfWeek: pipe(
+    array(pipe(number())),
+    check(
+      (days) => days.every((day) => day >= 0 && day <= 6),
+      'Days of week must be between 0 (Sunday) and 6 (Saturday)',
+    ),
+    minLength(1, 'Please select at least one day of week'),
+  ),
+})
+
+const recurringMonthlyFormSchema = object({
+  ...recurringBaseFields,
+  recurringType: literal('monthly'),
+  daysOfMonth: pipe(
+    array(pipe(number())),
+    check(
+      (days) => days.every((day) => day >= 1 && day <= 31),
+      'Days of month must be between 1 and 31',
+    ),
+    minLength(1, 'Please select at least one day of month'),
+  ),
+})
+
+const recurringYearlyFormSchema = object({
+  ...recurringBaseFields,
+  recurringType: literal('yearly'),
+  yearlyMonths: pipe(
+    array(pipe(number())),
+    check(
+      (months) => months.every((month) => month >= 1 && month <= 12),
+      'Months must be between 1 and 12',
+    ),
+    minLength(1, 'Please select at least one month'),
+  ),
+  yearlyDays: pipe(
+    array(pipe(number())),
+    check(
+      (days) => days.every((day) => day >= 1 && day <= 31),
+      'Days must be between 1 and 31',
+    ),
+    minLength(1, 'Please select at least one day'),
+  ),
+})
+
+const recurringFormSchema = variant('recurringType', [
+  recurringWeeklyFormSchema,
+  recurringMonthlyFormSchema,
+  recurringYearlyFormSchema,
+])
+
+// Discriminated union based on mode
+const dynamicFormSchema = variant('mode', [onceFormSchema, recurringFormSchema])
+
+type DynamicFormType = InferOutput<typeof dynamicFormSchema>
+
+const defaultValues: DynamicFormType = {
+  mode: 'once',
+  datetime: new Date(
+    new Date().getTime() -
+      new Date().getTimezoneOffset() * 60 * 1000 +
+      30 * 60 * 1000,
+  )
+    .toISOString()
+    .slice(0, 16),
+}
+
+const dynamicFormOpts = formOptions({
+  defaultValues: defaultValues as DynamicFormType,
+})
+
+export type { DynamicFormType }
+export { dynamicFormSchema, dynamicFormOpts }
+
+const dynamicFormSchema2 = pipe(
   object({
     mode: picklist(['once', 'recurring']),
     datetime: optional(
@@ -179,43 +283,10 @@ const dynamicFormSchema = pipe(
       ),
     ),
     recurringType: picklist(['weekly', 'monthly', 'yearly']),
-    daysOfWeek: pipe(
-      array(
-        pipe(
-          number(),
-          minValue(0, 'Please select at least one day of week'),
-          maxValue(6, 'Please select at least one day of week'),
-        ),
-      ),
-    ),
-
-    daysOfMonth: pipe(
-      array(
-        pipe(
-          number(),
-          minValue(1, 'Please select at least one day of month'),
-          maxValue(31, 'Please select at least one day of month'),
-        ),
-      ),
-    ),
-    yearlyMonths: pipe(
-      array(
-        pipe(
-          number(),
-          minValue(1, 'Please select at least one month'),
-          maxValue(12, 'Please select at least one month'),
-        ),
-      ),
-    ),
-    yearlyDays: pipe(
-      array(
-        pipe(
-          number(),
-          minValue(1, 'Please select at least one day'),
-          maxValue(31, 'Please select at least one day'),
-        ),
-      ),
-    ),
+    daysOfWeek: pipe(array(pipe(number()))),
+    daysOfMonth: pipe(array(pipe(number()))),
+    yearlyMonths: pipe(array(pipe(number()))),
+    yearlyDays: pipe(array(pipe(number()))),
     time: pipe(array(pipe(string(), isoTimeSecond('Invalid time format')))),
   }),
   rawCheck(({ dataset, addIssue }) => {
@@ -274,11 +345,49 @@ const dynamicFormSchema = pipe(
 
     if (
       dataset.value.mode === 'recurring' &&
+      dataset.value.recurringType === 'weekly' &&
+      dataset.value.daysOfMonth.every((day) => day < 0 || day > 6)
+    ) {
+      addIssue({
+        message: 'Days of week must be between 0 (Sunday) and 6 (Saturday)',
+        path: [
+          {
+            type: 'object',
+            origin: 'key',
+            input: dataset.value,
+            key: 'daysOfWeek',
+            value: dataset.value.daysOfWeek,
+          },
+        ],
+      })
+    }
+
+    if (
+      dataset.value.mode === 'recurring' &&
       dataset.value.recurringType === 'monthly' &&
       dataset.value.daysOfMonth.length === 0
     ) {
       addIssue({
         message: 'Please select at least one day of month',
+        path: [
+          {
+            type: 'object',
+            origin: 'key',
+            input: dataset.value,
+            key: 'daysOfMonth',
+            value: dataset.value.daysOfMonth,
+          },
+        ],
+      })
+    }
+
+    if (
+      dataset.value.mode === 'recurring' &&
+      dataset.value.recurringType === 'monthly' &&
+      dataset.value.daysOfMonth.every((day) => day < 1 || day > 31)
+    ) {
+      addIssue({
+        message: 'Days of month must be between 1 and 31',
         path: [
           {
             type: 'object',
@@ -313,6 +422,25 @@ const dynamicFormSchema = pipe(
     if (
       dataset.value.mode === 'recurring' &&
       dataset.value.recurringType === 'yearly' &&
+      dataset.value.yearlyMonths.every((month) => month < 1 || month > 12)
+    ) {
+      addIssue({
+        message: 'Months must be between 1 and 12',
+        path: [
+          {
+            type: 'object',
+            origin: 'key',
+            input: dataset.value,
+            key: 'yearlyMonths',
+            value: dataset.value.yearlyMonths,
+          },
+        ],
+      })
+    }
+
+    if (
+      dataset.value.mode === 'recurring' &&
+      dataset.value.recurringType === 'yearly' &&
       dataset.value.yearlyDays.length === 0
     ) {
       addIssue({
@@ -328,31 +456,24 @@ const dynamicFormSchema = pipe(
         ],
       })
     }
+
+    if (
+      dataset.value.mode === 'recurring' &&
+      dataset.value.recurringType === 'yearly' &&
+      dataset.value.yearlyDays.every((day) => day < 1 || day > 31)
+    ) {
+      addIssue({
+        message: 'Days must be between 1 and 31',
+        path: [
+          {
+            type: 'object',
+            origin: 'key',
+            input: dataset.value,
+            key: 'yearlyDays',
+            value: dataset.value.yearlyDays,
+          },
+        ],
+      })
+    }
   }),
 )
-
-type DynamicFormType = InferOutput<typeof dynamicFormSchema>
-
-const defaultValues: DynamicFormType = {
-  mode: 'once',
-  datetime: new Date(
-    new Date().getTime() -
-      new Date().getTimezoneOffset() * 60 * 1000 +
-      30 * 60 * 1000,
-  )
-    .toISOString()
-    .slice(0, 16),
-  recurringType: 'weekly',
-  daysOfWeek: [],
-  daysOfMonth: [],
-  yearlyMonths: [],
-  yearlyDays: [],
-  time: [],
-}
-
-const dynamicFormOpts = formOptions({
-  defaultValues: defaultValues,
-})
-
-export type { DynamicFormType }
-export { dynamicFormSchema, dynamicFormOpts }
