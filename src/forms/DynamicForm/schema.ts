@@ -16,110 +16,170 @@
 import { formOptions } from '@tanstack/react-form'
 import z from 'zod'
 
-// Once mode schema: just need a datetime
-const onceFormZodSchema = z.object({
-  mode: z.literal('once'),
-  datetime: z
-    .string()
-    .datetime({ message: 'Invalid datetime format' })
-    .refine(
-      (value) => new Date(value) > new Date(),
-      'Datetime must be after current time',
-    ),
-})
-
-// Recurring mode schema: need recurring type, time, and corresponding date fields
-const recurringBaseZodFields = {
-  mode: z.literal('recurring'),
-  time: z.array(z.string().time()).min(1, 'At least one time is required'),
-}
-
-const recurringWeeklyFormZodSchema = z.object({
-  ...recurringBaseZodFields,
-  recurringType: z.literal('weekly'),
-  daysOfWeek: z.array(z.number().min(0).max(6)).min(1),
-})
-const recurringMonthlyFormZodSchema = z.object({
-  ...recurringBaseZodFields,
-  recurringType: z.literal('monthly'),
-  daysOfMonth: z.array(z.number().min(1).max(31)).min(1),
-})
-const recurringYearlyFormZodSchema = z.object({
-  ...recurringBaseZodFields,
-  recurringType: z.literal('yearly'),
-  yearlyMonths: z.array(z.number().min(1).max(12)).min(1),
-  yearlyDays: z.array(z.number().min(1).max(31)).min(1),
-})
-// Discriminated union based on mode
-const recurringFormZodSchema = z.discriminatedUnion('recurringType', [
-  recurringWeeklyFormZodSchema,
-  recurringMonthlyFormZodSchema,
-  recurringYearlyFormZodSchema,
-])
-export const dynamicFormZodSchema = z.discriminatedUnion('mode', [
-  onceFormZodSchema,
-  recurringFormZodSchema,
-])
-
-type DynamicZodFormType = z.infer<typeof dynamicFormZodSchema>
-
 // ============================================================================
 // Valibot Version
 // ============================================================================
 
 import {
-  pipe,
-  minValue,
-  maxValue,
-  object,
-  literal,
-  number,
-  string,
-  minLength,
-  isoDateTime,
-  custom,
-  type InferOutput,
-  variant,
   array,
+  custom,
+  isoDateTime,
   isoTimeSecond,
+  maxValue,
+  minLength,
+  minValue,
+  number,
+  object,
   optional,
   picklist,
+  pipe,
+  rawCheck,
+  string,
 } from 'valibot'
+import type { InferOutput } from 'valibot'
 
-// Once mode schema: just need a datetime
-const onceFormSchema = pipe(
-  object({
-    mode: literal('once'),
-    // recurringType: literal(''),
-    datetime: pipe(
-      string(),
-      minLength(1, 'Datetime is required'),
-      isoDateTime('Invalid datetime format'),
-      custom<string>((value) => {
-        const currentDate = new Date()
-        const selectedDateTime = new Date(value as string)
-        if (selectedDateTime <= currentDate) {
-          return false
-        }
-        return true
-      }, 'Datetime must be after current time'),
+// Zod schema matching the valibot structure
+export const dynamicFormZodSchema = z
+  .object({
+    mode: z.enum(['once', 'recurring']),
+    datetime: z
+      .string()
+      .min(1, 'Datetime is required')
+      .datetime({ message: 'Invalid datetime format' })
+      .optional(),
+    recurringType: z.enum(['weekly', 'monthly', 'yearly']),
+    daysOfWeek: z.array(
+      z
+        .number()
+        .min(0, 'Please select at least one day of week')
+        .max(6, 'Please select at least one day of week'),
     ),
-  }),
-)
+    daysOfMonth: z.array(
+      z
+        .number()
+        .min(1, 'Please select at least one day of month')
+        .max(31, 'Please select at least one day of month'),
+    ),
+    yearlyMonths: z.array(
+      z
+        .number()
+        .min(1, 'Please select at least one month')
+        .max(12, 'Please select at least one month'),
+    ),
+    yearlyDays: z.array(
+      z
+        .number()
+        .min(1, 'Please select at least one day')
+        .max(31, 'Please select at least one day'),
+    ),
+    time: z.array(z.string().time({ message: 'Invalid time format' })),
+  })
+  .superRefine((data, ctx) => {
+    // In once mode, datetime must be provided
+    if (data.mode === 'once' && !data.datetime) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'Datetime is required in once mode',
+        path: ['datetime'],
+      })
+    }
 
-// Recurring mode schema: need recurring type, time, and corresponding date fields
-const recurringBaseFields = {
-  mode: literal('recurring'),
-  time: pipe(
-    array(pipe(string(), isoTimeSecond('Invalid time format'))),
-    minLength(1, 'At least one time is required'),
-  ),
-}
-const recurringWeeklyFormSchema = object({
-  ...recurringBaseFields,
-  recurringType: literal('weekly'),
-  daysOfWeek: optional(
-    pipe(
+    // In once mode, datetime must be after current time
+    if (data.mode === 'once' && data.datetime) {
+      const currentDate = new Date()
+      const selectedDateTime = new Date(data.datetime)
+      if (selectedDateTime <= currentDate) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: 'Datetime must be after current time',
+          path: ['datetime'],
+        })
+      }
+    }
+
+    // In recurring mode, time must be provided
+    if (data.mode === 'recurring' && data.time.length === 0) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'Please select at least one time',
+        path: ['time'],
+      })
+    }
+
+    // In recurring weekly mode, daysOfWeek must be provided
+    if (
+      data.mode === 'recurring' &&
+      data.recurringType === 'weekly' &&
+      data.daysOfWeek.length === 0
+    ) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'Please select at least one day of week',
+        path: ['daysOfWeek'],
+      })
+    }
+
+    // In recurring monthly mode, daysOfMonth must be provided
+    if (
+      data.mode === 'recurring' &&
+      data.recurringType === 'monthly' &&
+      data.daysOfMonth.length === 0
+    ) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'Please select at least one day of month',
+        path: ['daysOfMonth'],
+      })
+    }
+
+    // In recurring yearly mode, yearlyMonths and yearlyDays must be provided
+    if (
+      data.mode === 'recurring' &&
+      data.recurringType === 'yearly' &&
+      data.yearlyMonths.length === 0
+    ) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'Please select at least one month and one day',
+        path: ['yearlyMonths'],
+      })
+    }
+
+    if (
+      data.mode === 'recurring' &&
+      data.recurringType === 'yearly' &&
+      data.yearlyDays.length === 0
+    ) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'Please select at least one month and one day',
+        path: ['yearlyDays'],
+      })
+    }
+  })
+
+type DynamicZodFormType = z.infer<typeof dynamicFormZodSchema>
+
+const dynamicFormSchema = pipe(
+  object({
+    mode: picklist(['once', 'recurring']),
+    datetime: optional(
+      pipe(
+        string(),
+        minLength(1, 'Datetime is required'),
+        isoDateTime('Invalid datetime format'),
+        custom<string>((value) => {
+          const currentDate = new Date()
+          const selectedDateTime = new Date(value as string)
+          if (selectedDateTime <= currentDate) {
+            return false
+          }
+          return true
+        }, 'Datetime must be after current time'),
+      ),
+    ),
+    recurringType: picklist(['weekly', 'monthly', 'yearly']),
+    daysOfWeek: pipe(
       array(
         pipe(
           number(),
@@ -127,16 +187,9 @@ const recurringWeeklyFormSchema = object({
           maxValue(6, 'Please select at least one day of week'),
         ),
       ),
-      minLength(1, 'Please select at least one day of week'),
     ),
-  ),
-})
 
-const recurringMonthlyFormSchema = object({
-  ...recurringBaseFields,
-  recurringType: literal('monthly'),
-  daysOfMonth: optional(
-    pipe(
+    daysOfMonth: pipe(
       array(
         pipe(
           number(),
@@ -144,16 +197,8 @@ const recurringMonthlyFormSchema = object({
           maxValue(31, 'Please select at least one day of month'),
         ),
       ),
-      minLength(1, 'Please select at least one day of month'),
     ),
-  ),
-})
-
-const recurringYearlyFormSchema = object({
-  ...recurringBaseFields,
-  recurringType: literal('yearly'),
-  yearlyMonths: optional(
-    pipe(
+    yearlyMonths: pipe(
       array(
         pipe(
           number(),
@@ -161,11 +206,8 @@ const recurringYearlyFormSchema = object({
           maxValue(12, 'Please select at least one month'),
         ),
       ),
-      minLength(1, 'Please select at least one month'),
     ),
-  ),
-  yearlyDays: optional(
-    pipe(
+    yearlyDays: pipe(
       array(
         pipe(
           number(),
@@ -173,19 +215,121 @@ const recurringYearlyFormSchema = object({
           maxValue(31, 'Please select at least one day'),
         ),
       ),
-      minLength(1, 'Please select at least one day'),
     ),
-  ),
-})
+    time: pipe(array(pipe(string(), isoTimeSecond('Invalid time format')))),
+  }),
+  rawCheck(({ dataset, addIssue }) => {
+    if (!dataset.typed) {
+      return
+    }
+    // In once mode, datetime must be provided
+    if (dataset.value.mode === 'once' && !dataset.value.datetime) {
+      addIssue({
+        message: 'Datetime is required in once mode',
+        path: [
+          {
+            type: 'object',
+            origin: 'key',
+            input: dataset.value,
+            key: 'datetime',
+            value: dataset.value.datetime,
+          },
+        ],
+      })
+    }
 
-const recurringFormSchema = variant('recurringType', [
-  recurringWeeklyFormSchema,
-  recurringMonthlyFormSchema,
-  recurringYearlyFormSchema,
-])
+    if (dataset.value.mode === 'recurring' && dataset.value.time.length === 0) {
+      addIssue({
+        message: 'Please select at least one time',
+        path: [
+          {
+            type: 'object',
+            origin: 'key',
+            input: dataset.value,
+            key: 'time',
+            value: dataset.value.time,
+          },
+        ],
+      })
+    }
 
-// Discriminated union based on mode
-const dynamicFormSchema = variant('mode', [onceFormSchema, recurringFormSchema])
+    if (
+      dataset.value.mode === 'recurring' &&
+      dataset.value.recurringType === 'weekly' &&
+      dataset.value.daysOfWeek.length === 0
+    ) {
+      addIssue({
+        message: 'Please select at least one day of week',
+        path: [
+          {
+            type: 'object',
+            origin: 'key',
+            input: dataset.value,
+            key: 'daysOfWeek',
+            value: dataset.value.daysOfWeek,
+          },
+        ],
+      })
+    }
+
+    if (
+      dataset.value.mode === 'recurring' &&
+      dataset.value.recurringType === 'monthly' &&
+      dataset.value.daysOfMonth.length === 0
+    ) {
+      addIssue({
+        message: 'Please select at least one day of month',
+        path: [
+          {
+            type: 'object',
+            origin: 'key',
+            input: dataset.value,
+            key: 'daysOfMonth',
+            value: dataset.value.daysOfMonth,
+          },
+        ],
+      })
+    }
+
+    if (
+      dataset.value.mode === 'recurring' &&
+      dataset.value.recurringType === 'yearly' &&
+      dataset.value.yearlyMonths.length === 0
+    ) {
+      addIssue({
+        message: 'Please select at least one month and one day',
+        path: [
+          {
+            type: 'object',
+            origin: 'key',
+            input: dataset.value,
+            key: 'yearlyMonths',
+            value: dataset.value.yearlyMonths,
+          },
+        ],
+      })
+    }
+
+    if (
+      dataset.value.mode === 'recurring' &&
+      dataset.value.recurringType === 'yearly' &&
+      dataset.value.yearlyDays.length === 0
+    ) {
+      addIssue({
+        message: 'Please select at least one month and one day',
+        path: [
+          {
+            type: 'object',
+            origin: 'key',
+            input: dataset.value,
+            key: 'yearlyDays',
+            value: dataset.value.yearlyDays,
+          },
+        ],
+      })
+    }
+  }),
+)
 
 type DynamicFormType = InferOutput<typeof dynamicFormSchema>
 
@@ -198,10 +342,16 @@ const defaultValues: DynamicFormType = {
   )
     .toISOString()
     .slice(0, 16),
+  recurringType: 'weekly',
+  daysOfWeek: [],
+  daysOfMonth: [],
+  yearlyMonths: [],
+  yearlyDays: [],
+  time: [],
 }
 
 const dynamicFormOpts = formOptions({
-  defaultValues: defaultValues as DynamicFormType,
+  defaultValues: defaultValues,
 })
 
 export type { DynamicFormType }
