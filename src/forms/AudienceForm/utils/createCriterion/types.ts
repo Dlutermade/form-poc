@@ -8,7 +8,8 @@ import { FILTER_DIMENSION_TYPE } from '../createFilterDimension'
 // Define all criterion types
 export enum CRITERION_TYPE {
   JOIN_MEMBER = 'JOIN_MEMBER',
-  ORDER_AMOUNT = 'ORDER_AMOUNT',
+  ORDER_VALUE = 'ORDER_VALUE',
+  TOTAL_PURCHASE = 'TOTAL_PURCHASE',
 }
 
 // ============================================================================
@@ -19,7 +20,10 @@ export type CriterionAllowedFilterDimensionsMap = {
   [CRITERION_TYPE.JOIN_MEMBER]:
     | FILTER_DIMENSION_TYPE.DATE
     | FILTER_DIMENSION_TYPE.TAG
-  [CRITERION_TYPE.ORDER_AMOUNT]:
+  [CRITERION_TYPE.ORDER_VALUE]:
+    | FILTER_DIMENSION_TYPE.NUMBER
+    | FILTER_DIMENSION_TYPE.DATE
+  [CRITERION_TYPE.TOTAL_PURCHASE]:
     | FILTER_DIMENSION_TYPE.NUMBER
     | FILTER_DIMENSION_TYPE.DATE
 }
@@ -32,7 +36,10 @@ export type CriterionMetaMap = {
   [CRITERION_TYPE.JOIN_MEMBER]: {
     description?: string
   }
-  [CRITERION_TYPE.ORDER_AMOUNT]: {
+  [CRITERION_TYPE.ORDER_VALUE]: {
+    description?: string
+  }
+  [CRITERION_TYPE.TOTAL_PURCHASE]: {
     description?: string
   }
 }

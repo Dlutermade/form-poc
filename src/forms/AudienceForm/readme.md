@@ -15,25 +15,74 @@ Audience Form is a sophisticated audience segmentation system designed for marke
 
 ## 🏗️ Architecture
 
-### Three-Layer Structure
+### Four-Layer Structure
 
 ```
-Criterion (Condition)
-  └── FilterDimension (Filter) 
-        └── FilterMode (Mode)
+CriterionGroup (AND Logic)
+  └── Criterion Group Item (OR Logic)
+        └── Criterion
+              └── FilterDimension
+                    └── FilterMode
 ```
+
+**Data Structure:**
+```typescript
+{
+  // Outer criterionGroups are combined with AND
+  criterionGroups: [
+    {
+      // Inner criteria within a group are combined with OR
+      criteria: [
+        {
+          type: CRITERION_TYPE.JOIN_MEMBER,
+          filterDimensions: [...]
+        },
+        {
+          type: CRITERION_TYPE.ORDER_VALUE,
+          filterDimensions: [...]
+        }
+      ]
+    },
+    {
+      criteria: [
+        {
+          type: CRITERION_TYPE.TOTAL_PURCHASE,
+          filterDimensions: [...]
+        }
+      ]
+    }
+  ]
+}
+```
+
+**Logic:**
+- `(Criterion A OR Criterion B) AND (Criterion C) AND (Criterion D OR Criterion E)`
+
+#### 🔵 CriterionGroup Layer
+**Definition**: Top-level container that groups criteria with **AND** logic
+
+**Characteristics**:
+- Multiple criterion groups are combined with **AND** logic
+- Each group contains one or more criteria
+
+#### 🟢 Criterion Group Item Layer  
+**Definition**: Container for criteria that are combined with **OR** logic
+
+**Characteristics**:
+- Criteria within the same group are combined with **OR** logic
+- Allows alternative conditions to be specified
 
 #### 1️⃣ Criterion Layer
 **Definition**: High-level business condition categories
 
 **Examples**:
 - `JOIN_MEMBER` - Member registration criteria
-- `ORDER` - Order-related criteria
-- `MEMBER_GENDER` - Member gender criteria
+- `ORDER_VALUE` - Single order value criteria (any single order ≥ amount)
+- `TOTAL_PURCHASE` - Total purchase amount criteria (accumulated spending in time period)
 
 **Characteristics**:
 - Each criterion contains 1 to many filter dimensions
-- Multiple criteria can be combined with AND/OR logic (determined by outer group)
+- Criteria can be grouped with OR logic within a criterion group item
 
 #### 2️⃣ FilterDimension Layer
 **Definition**: Specific filtering dimensions within a criterion
@@ -68,41 +117,127 @@ Criterion (Condition)
 - `GREATER_THAN` - Greater than a value
 - `BETWEEN` - Between two values
 
+---
+
+## 🔗 Logic Composition
+
+### AND/OR Logic Structure
+
+**Outer Level (CriterionGroups):** Combined with **AND** logic
+**Inner Level (Criteria within a group):** Combined with **OR** logic
+
+**Example:**
+```
+criterionGroups: [
+  Group A → (Criterion 1 OR Criterion 2 OR Criterion 3)
+  AND
+  Group B → (Criterion 4)
+  AND  
+  Group C → (Criterion 5 OR Criterion 6)
+]
+
+Final Logic: (C1 OR C2 OR C3) AND (C4) AND (C5 OR C6)
+```
+
 ## 📝 Complete Example
 
-### Use Case: Target New LINE Members
+### Use Case: Complex Audience Targeting
 
-**Goal**: Find members who joined via LINE in the last 7 days
+**Goal**: Find members who either:
+- Joined via LINE in the last 7 days, OR spent over $1000 in a single order
+- AND have total purchases over $5000 in the last 30 days
 
 **Configuration**:
 ```typescript
 {
-  criterion: {
-    type: CRITERION_TYPE.JOIN_MEMBER,
-    filters: [
-      {
-        dimension: FILTER_DIMENSION_TYPE.TAG,
-        mode: TAG_FILTER_MODE.HAS_ANY,
-        value: ['LINE']
-      },
-      {
-        dimension: FILTER_DIMENSION_TYPE.DATE,
-        mode: DATE_FILTER_MODE.LAST_N_DAYS,
-        value: 7
-      }
-    ]
-  }
+  criterionGroups: [
+    {
+      // OR group: (Join via LINE recently) OR (High single order value)
+      criteria: [
+        {
+          type: CRITERION_TYPE.JOIN_MEMBER,
+          filterDimensions: [
+            {
+              type: FILTER_DIMENSION_TYPE.TAG,
+              mode: TAG_FILTER_MODE.HAS_ANY,
+              value: ['LINE']
+            },
+            {
+              type: FILTER_DIMENSION_TYPE.DATE,
+              mode: DATE_FILTER_MODE.LAST_N_DAYS,
+              value: 7
+            }
+          ]
+        },
+        {
+          type: CRITERION_TYPE.ORDER_VALUE,
+          filterDimensions: [
+            {
+              type: FILTER_DIMENSION_TYPE.NUMBER,
+              mode: NUMBER_FILTER_MODE.GREATER_THAN,
+              value: 1000
+            }
+          ]
+        }
+      ]
+    },
+    {
+      // AND: High total spending
+      criteria: [
+        {
+          type: CRITERION_TYPE.TOTAL_PURCHASE,
+          filterDimensions: [
+            {
+              type: FILTER_DIMENSION_TYPE.NUMBER,
+              mode: NUMBER_FILTER_MODE.GREATER_THAN,
+              value: 5000
+            },
+            {
+              type: FILTER_DIMENSION_TYPE.DATE,
+              mode: DATE_FILTER_MODE.LAST_N_DAYS,
+              value: 30
+            }
+          ]
+        }
+      ]
+    }
+  ]
 }
 ```
 
+**Logic Explanation:**
+```
+(
+  (JOIN_MEMBER via LINE in last 7 days) 
+  OR 
+  (ORDER_VALUE > $1000)
+) 
+AND 
+(
+  TOTAL_PURCHASE > $5000 in last 30 days
+)
+```
+
 **User Flow**:
-1. Select criterion: "Join Member"
-2. Add filter dimension: "Join Platform" (TAG)
-   - Select mode: "Has Any"
-   - Select value: "LINE"
-3. Add filter dimension: "Join Date" (DATE)
-   - Select mode: "Last N Days"
-   - Input value: 7
+1. User enters the audience form (initially empty)
+2. Click "Add Criterion" button
+3. Modal opens showing criterion types **grouped by category**:
+   - 📋 **Membership Behavior**
+     - Join Member
+   - 💰 **Purchase Behavior**
+     - Order Value
+     - Total Purchase
+4. User selects "Join Member" from "Membership Behavior" category
+5. System creates a new criterion group with one criterion of type "Join Member"
+6. System injects default filter dimensions for "Join Member":
+   - Join Date (DATE) - with default mode
+   - Join Source (TAG) - with default options
+7. User configures filter dimensions:
+   - Set "Join Source" → mode: "Has Any" → value: "LINE"
+   - Set "Join Date" → mode: "Last N Days" → value: 7
+8. User can now:
+   - **Add OR criterion**: Click "Add OR Criterion" within the same group
+   - **Add AND criterion group**: Click "Add Criterion Group" to create a new group
 
 ## 🛠️ Technical Implementation
 
@@ -115,21 +250,103 @@ AudienceForm/
 ├── formContext.ts     # Form context definitions
 ├── index.tsx          # Main component
 └── utils/
-    ├── createCriterion/      # Criterion (Condition) utilities
-    │   ├── types.ts          # 📝 Register new criterion types here
-    │   ├── core.ts           # Core type inference system
-    │   ├── examples.ts       # Usage examples
-    │   └── index.ts          # Exports
-    └── createFilterDimension/ # FilterDimension (Filter) utilities
-        ├── types.ts          # 📝 Register new filter types here
-        ├── core.ts           # Core type inference system
-        ├── examples.ts       # Usage examples
-        └── index.ts          # Exports
+    ├── createCriterion/           # Criterion utilities
+    │   ├── types.ts               # 📝 Register criterion types
+    │   ├── categories.ts          # 📝 Register UI categories
+    │   ├── core.ts                # Core type inference
+    │   ├── examples.ts            # Usage examples
+    │   └── index.ts               # Exports
+    └── createFilterDimension/     # FilterDimension utilities
+        ├── types.ts               # 📝 Register filter types
+        ├── core.ts                # Core type inference
+        ├── examples.ts            # Usage examples
+        └── index.ts               # Exports
 ```
 
-### Type Registration System
+---
 
-#### Adding a New Criterion Type
+## 🎨 UI Layer: Criterion Categories
+
+### Purpose
+`CriterionCategory` is a **UI-only configuration** that groups criterion types for better user experience. It has no impact on the data structure or business logic.
+
+### Structure
+
+**File**: `utils/createCriterion/categories.ts`
+
+```typescript
+export enum CRITERION_CATEGORY {
+  MEMBERSHIP_BEHAVIOR = 'MEMBERSHIP_BEHAVIOR',
+  PURCHASE_BEHAVIOR = 'PURCHASE_BEHAVIOR',
+  ENGAGEMENT_BEHAVIOR = 'ENGAGEMENT_BEHAVIOR',
+}
+
+export type CriterionCategoryMeta = {
+  label: string
+  description?: string
+  icon?: string
+  criterionTypes: CRITERION_TYPE[]
+}
+
+export const criterionCategoryConfig: Record<CRITERION_CATEGORY, CriterionCategoryMeta> = {
+  [CRITERION_CATEGORY.MEMBERSHIP_BEHAVIOR]: {
+    label: '會員行為',
+    description: '與會員註冊、加入相關的條件',
+    icon: '👥',
+    criterionTypes: [CRITERION_TYPE.JOIN_MEMBER],
+  },
+  [CRITERION_CATEGORY.PURCHASE_BEHAVIOR]: {
+    label: '購買行為',
+    description: '與訂單、消費相關的條件',
+    icon: '💰',
+    criterionTypes: [
+      CRITERION_TYPE.ORDER_VALUE,
+      CRITERION_TYPE.TOTAL_PURCHASE,
+    ],
+  },
+}
+```
+
+### Key Distinction
+
+| Concept                 | Purpose                         | Layer          | Example                      |
+| ----------------------- | ------------------------------- | -------------- | ---------------------------- |
+| **`criterionGroups`**   | Form data structure (AND logic) | Data Layer     | `{ criterionGroups: [...] }` |
+| **`CriterionCategory`** | UI grouping for selection modal | UI Layer       | Categories in modal          |
+| **`CRITERION_TYPE`**    | Business condition type         | Business Layer | `JOIN_MEMBER`, `ORDER_VALUE` |
+
+### Usage in Components
+
+```typescript
+import { criterionCategoryConfig } from './utils/createCriterion/categories'
+
+// In criterion selection modal
+const CriterionSelectionModal = () => {
+  return (
+    <div>
+      {Object.entries(criterionCategoryConfig).map(([key, config]) => (
+        <CategorySection key={key}>
+          <CategoryHeader>
+            {config.icon} {config.label}
+          </CategoryHeader>
+          <CategoryDescription>{config.description}</CategoryDescription>
+          <CriterionList>
+            {config.criterionTypes.map(type => (
+              <CriterionOption value={type} />
+            ))}
+          </CriterionList>
+        </CategorySection>
+      ))}
+    </div>
+  )
+}
+```
+
+---
+
+## 🔧 Type Registration System
+
+### Adding a New Criterion Type
 
 **File**: `utils/createCriterion/types.ts`
 
@@ -137,14 +354,16 @@ AudienceForm/
 // 1. Add new criterion type
 export enum CRITERION_TYPE {
   JOIN_MEMBER = 'JOIN_MEMBER',
-  ORDER = 'ORDER',
+  ORDER_VALUE = 'ORDER_VALUE',
+  TOTAL_PURCHASE = 'TOTAL_PURCHASE',
   MEMBER_GENDER = 'MEMBER_GENDER',  // ✨ New
 }
 
 // 2. Register allowed filter dimensions for this criterion
 export type CriterionAllowedFilterDimensionsMap = {
   [CRITERION_TYPE.JOIN_MEMBER]: FILTER_DIMENSION_TYPE.DATE | FILTER_DIMENSION_TYPE.TAG
-  [CRITERION_TYPE.ORDER]: FILTER_DIMENSION_TYPE.NUMBER | FILTER_DIMENSION_TYPE.DATE
+  [CRITERION_TYPE.ORDER_VALUE]: FILTER_DIMENSION_TYPE.NUMBER | FILTER_DIMENSION_TYPE.DATE
+  [CRITERION_TYPE.TOTAL_PURCHASE]: FILTER_DIMENSION_TYPE.NUMBER | FILTER_DIMENSION_TYPE.DATE
   [CRITERION_TYPE.MEMBER_GENDER]: FILTER_DIMENSION_TYPE.TAG  // ✨ New
 }
 
@@ -153,6 +372,22 @@ export type CriterionMetaMap = {
   [CRITERION_TYPE.MEMBER_GENDER]: {  // ✨ New
     description?: string
   }
+}
+```
+
+**File**: `utils/createCriterion/categories.ts`
+
+```typescript
+// 4. Add to UI category (optional but recommended)
+export const criterionCategoryConfig: Record<CRITERION_CATEGORY, CriterionCategoryMeta> = {
+  [CRITERION_CATEGORY.MEMBERSHIP_BEHAVIOR]: {
+    label: '會員行為',
+    criterionTypes: [
+      CRITERION_TYPE.JOIN_MEMBER,
+      CRITERION_TYPE.MEMBER_GENDER,  // ✨ New
+    ],
+  },
+  // ...
 }
 ```
 
@@ -227,7 +462,15 @@ export type FilterDimensionMetaMap = {
 2. Add to `CRITERION_TYPE` enum
 3. Register in `CriterionAllowedFilterDimensionsMap`
 4. Define metadata in `CriterionMetaMap`
-5. Done! Type inference handles the rest
+5. **(Optional but recommended)** Add to `criterionCategoryConfig` in `categories.ts` for UI grouping
+6. Done! Type inference handles the rest
+
+### Adding a New UI Category
+
+1. Open `utils/createCriterion/categories.ts`
+2. Add to `CRITERION_CATEGORY` enum
+3. Add configuration in `criterionCategoryConfig`
+4. Done! Modal will automatically show the new category
 
 ### Adding a New FilterDimension
 
@@ -242,19 +485,21 @@ export type FilterDimensionMetaMap = {
 ## 📊 Data Flow
 
 ```
-User Interaction
+User Interaction (UI Layer)
+    ↓
+Open Modal → Select Category (CriterionCategory)
     ↓
 Select Criterion Type (e.g., JOIN_MEMBER)
     ↓
-Add FilterDimension (e.g., DATE)
+System injects default FilterDimensions
     ↓
-Select FilterMode (e.g., LAST_N_DAYS)
-    ↓
-Input Value (e.g., 7)
+User configures FilterMode and values
     ↓
 Validation (Valibot schema)
     ↓
 Form State (TanStack Form)
+    ↓
+Data Structure: { criterionGroups: [...] }
     ↓
 Submit → Backend API
 ```
