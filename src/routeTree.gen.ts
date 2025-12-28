@@ -12,8 +12,10 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as DemoTanstackQueryRouteImport } from './routes/demo/tanstack-query'
 import { Route as DemoTableRouteImport } from './routes/demo/table'
+import { Route as BillDemoStepperIndexRouteImport } from './routes/bill-demo/stepper/index'
 import { Route as BillDemoSimpleIndexRouteImport } from './routes/bill-demo/simple/index'
 import { Route as BillDemoDynamicIndexRouteImport } from './routes/bill-demo/dynamic/index'
+import { Route as BillDemoAudienceIndexRouteImport } from './routes/bill-demo/audience/index'
 import { Route as BillDemoArrayIndexRouteImport } from './routes/bill-demo/array/index'
 import { Route as DemoFormSimpleRouteImport } from './routes/demo/form.simple'
 import { Route as DemoFormAddressRouteImport } from './routes/demo/form.address'
@@ -33,6 +35,11 @@ const DemoTableRoute = DemoTableRouteImport.update({
   path: '/demo/table',
   getParentRoute: () => rootRouteImport,
 } as any)
+const BillDemoStepperIndexRoute = BillDemoStepperIndexRouteImport.update({
+  id: '/bill-demo/stepper/',
+  path: '/bill-demo/stepper/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const BillDemoSimpleIndexRoute = BillDemoSimpleIndexRouteImport.update({
   id: '/bill-demo/simple/',
   path: '/bill-demo/simple/',
@@ -41,6 +48,11 @@ const BillDemoSimpleIndexRoute = BillDemoSimpleIndexRouteImport.update({
 const BillDemoDynamicIndexRoute = BillDemoDynamicIndexRouteImport.update({
   id: '/bill-demo/dynamic/',
   path: '/bill-demo/dynamic/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const BillDemoAudienceIndexRoute = BillDemoAudienceIndexRouteImport.update({
+  id: '/bill-demo/audience/',
+  path: '/bill-demo/audience/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const BillDemoArrayIndexRoute = BillDemoArrayIndexRouteImport.update({
@@ -66,8 +78,10 @@ export interface FileRoutesByFullPath {
   '/demo/form/address': typeof DemoFormAddressRoute
   '/demo/form/simple': typeof DemoFormSimpleRoute
   '/bill-demo/array': typeof BillDemoArrayIndexRoute
+  '/bill-demo/audience': typeof BillDemoAudienceIndexRoute
   '/bill-demo/dynamic': typeof BillDemoDynamicIndexRoute
   '/bill-demo/simple': typeof BillDemoSimpleIndexRoute
+  '/bill-demo/stepper': typeof BillDemoStepperIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -76,8 +90,10 @@ export interface FileRoutesByTo {
   '/demo/form/address': typeof DemoFormAddressRoute
   '/demo/form/simple': typeof DemoFormSimpleRoute
   '/bill-demo/array': typeof BillDemoArrayIndexRoute
+  '/bill-demo/audience': typeof BillDemoAudienceIndexRoute
   '/bill-demo/dynamic': typeof BillDemoDynamicIndexRoute
   '/bill-demo/simple': typeof BillDemoSimpleIndexRoute
+  '/bill-demo/stepper': typeof BillDemoStepperIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -87,8 +103,10 @@ export interface FileRoutesById {
   '/demo/form/address': typeof DemoFormAddressRoute
   '/demo/form/simple': typeof DemoFormSimpleRoute
   '/bill-demo/array/': typeof BillDemoArrayIndexRoute
+  '/bill-demo/audience/': typeof BillDemoAudienceIndexRoute
   '/bill-demo/dynamic/': typeof BillDemoDynamicIndexRoute
   '/bill-demo/simple/': typeof BillDemoSimpleIndexRoute
+  '/bill-demo/stepper/': typeof BillDemoStepperIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -99,8 +117,10 @@ export interface FileRouteTypes {
     | '/demo/form/address'
     | '/demo/form/simple'
     | '/bill-demo/array'
+    | '/bill-demo/audience'
     | '/bill-demo/dynamic'
     | '/bill-demo/simple'
+    | '/bill-demo/stepper'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -109,8 +129,10 @@ export interface FileRouteTypes {
     | '/demo/form/address'
     | '/demo/form/simple'
     | '/bill-demo/array'
+    | '/bill-demo/audience'
     | '/bill-demo/dynamic'
     | '/bill-demo/simple'
+    | '/bill-demo/stepper'
   id:
     | '__root__'
     | '/'
@@ -119,8 +141,10 @@ export interface FileRouteTypes {
     | '/demo/form/address'
     | '/demo/form/simple'
     | '/bill-demo/array/'
+    | '/bill-demo/audience/'
     | '/bill-demo/dynamic/'
     | '/bill-demo/simple/'
+    | '/bill-demo/stepper/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -130,8 +154,10 @@ export interface RootRouteChildren {
   DemoFormAddressRoute: typeof DemoFormAddressRoute
   DemoFormSimpleRoute: typeof DemoFormSimpleRoute
   BillDemoArrayIndexRoute: typeof BillDemoArrayIndexRoute
+  BillDemoAudienceIndexRoute: typeof BillDemoAudienceIndexRoute
   BillDemoDynamicIndexRoute: typeof BillDemoDynamicIndexRoute
   BillDemoSimpleIndexRoute: typeof BillDemoSimpleIndexRoute
+  BillDemoStepperIndexRoute: typeof BillDemoStepperIndexRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -157,6 +183,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DemoTableRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/bill-demo/stepper/': {
+      id: '/bill-demo/stepper/'
+      path: '/bill-demo/stepper'
+      fullPath: '/bill-demo/stepper'
+      preLoaderRoute: typeof BillDemoStepperIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/bill-demo/simple/': {
       id: '/bill-demo/simple/'
       path: '/bill-demo/simple'
@@ -169,6 +202,13 @@ declare module '@tanstack/react-router' {
       path: '/bill-demo/dynamic'
       fullPath: '/bill-demo/dynamic'
       preLoaderRoute: typeof BillDemoDynamicIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/bill-demo/audience/': {
+      id: '/bill-demo/audience/'
+      path: '/bill-demo/audience'
+      fullPath: '/bill-demo/audience'
+      preLoaderRoute: typeof BillDemoAudienceIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/bill-demo/array/': {
@@ -202,8 +242,10 @@ const rootRouteChildren: RootRouteChildren = {
   DemoFormAddressRoute: DemoFormAddressRoute,
   DemoFormSimpleRoute: DemoFormSimpleRoute,
   BillDemoArrayIndexRoute: BillDemoArrayIndexRoute,
+  BillDemoAudienceIndexRoute: BillDemoAudienceIndexRoute,
   BillDemoDynamicIndexRoute: BillDemoDynamicIndexRoute,
   BillDemoSimpleIndexRoute: BillDemoSimpleIndexRoute,
+  BillDemoStepperIndexRoute: BillDemoStepperIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

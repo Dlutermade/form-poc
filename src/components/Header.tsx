@@ -151,6 +151,32 @@ export default function Header() {
             <ClipboardType size={20} />
             <span className="font-medium">Bill Demo Dynamic Form</span>
           </Link>
+
+          <Link
+            to="/bill-demo/stepper"
+            onClick={() => setIsOpen(false)}
+            className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-800 transition-colors"
+            activeProps={{
+              className:
+                'flex items-center gap-3 p-3 rounded-lg bg-cyan-600 hover:bg-cyan-700 transition-colors',
+            }}
+          >
+            <ClipboardType size={20} />
+            <span className="font-medium">Bill Demo Stepper Form</span>
+          </Link>
+
+          <Link
+            to="/bill-demo/audience"
+            onClick={() => setIsOpen(false)}
+            className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-800 transition-colors"
+            activeProps={{
+              className:
+                'flex items-center gap-3 p-3 rounded-lg bg-cyan-600 hover:bg-cyan-700 transition-colors',
+            }}
+          >
+            <ClipboardType size={20} />
+            <span className="font-medium">Bill Demo Audience Form</span>
+          </Link>
         </nav>
       </aside>
     </>
