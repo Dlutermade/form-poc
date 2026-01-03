@@ -1,6 +1,5 @@
-import { useForm } from '@tanstack/react-form'
+import { useForm, type StandardSchemaV1Issue } from '@tanstack/react-form'
 import { simpleFormOpts, simpleFormSchema } from './schema'
-import type z from 'zod'
 
 const SimpleForm = () => {
   const form = useForm({
@@ -18,7 +17,7 @@ const SimpleForm = () => {
                 {
                   message: 'Please choose another one.',
                 },
-              ] as Array<z.ZodError>,
+              ] as Array<StandardSchemaV1Issue>,
             },
           },
         })
