@@ -3,7 +3,7 @@ import type {
   CriterionAllowedFilterDimensionsMap,
   CriterionMetaMap,
 } from './types'
-import type { FilterDimensionConfig } from '../createFilterDimension'
+import type { FilterDimensionConfig } from '../../filterDimension'
 
 // ============================================================================
 // Core Types - Type inference system for createCriterion
@@ -22,7 +22,8 @@ export type CreateCriterionConfig<T extends CRITERION_TYPE> = {
   meta?: CriterionMetaMap[T]
 }
 
-export type CriterionConfig<T extends CRITERION_TYPE> = CreateCriterionConfig<T>
+export type CriterionConfig<T extends CRITERION_TYPE = CRITERION_TYPE> =
+  CreateCriterionConfig<T>
 
 // ============================================================================
 // Main API - createCriterion function

@@ -1,4 +1,4 @@
-import { FILTER_DIMENSION_TYPE } from '../createFilterDimension'
+import { FILTER_DIMENSION_TYPE } from '../../filterDimension'
 
 // ============================================================================
 // Criterion Types Registration

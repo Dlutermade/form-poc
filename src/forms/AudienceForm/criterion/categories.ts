@@ -1,4 +1,9 @@
-import { CRITERION_TYPE } from './types'
+import {
+  joinMemberCriterion,
+  orderValueCriterion,
+  totalPurchaseCriterion,
+  type RegisteredCriterion,
+} from './register'
 
 // ============================================================================
 // UI Layer: Criterion Categories
@@ -12,41 +17,63 @@ export enum CRITERION_CATEGORY {
 }
 
 // ============================================================================
-// Category Metadata Type
+// Type-safe Criterion Category Configuration
 // ============================================================================
 
+/**
+ * Helper to ensure criterions are unique (no duplicates)
+ */
+function defineCriterions<T extends readonly RegisteredCriterion[]>(
+  criterions: T,
+): T {
+  const types = criterions.map((c) => c.type)
+  const uniqueTypes = new Set(types)
+
+  if (types.length !== uniqueTypes.size) {
+    const duplicates = types.filter(
+      (type, index) => types.indexOf(type) !== index,
+    )
+    throw new Error(
+      `Duplicate criterions detected: ${duplicates.join(', ')}. Each criterion can only appear once in a category.`,
+    )
+  }
+
+  return criterions
+}
+
+/**
+ * Category metadata type
+ */
 export type CriterionCategoryMeta = {
   label: string
   description?: string
   icon?: string
-  criterionTypes: CRITERION_TYPE[]
+  criterions: readonly RegisteredCriterion[]
 }
 
 // ============================================================================
 // Category Configuration
-// Register criterion types under their respective categories
+// Register criterion instances under their respective categories
+// Type-safe: Only accepts registered criterions, prevents duplicates at runtime
 // ============================================================================
 
-export const criterionCategoryConfig: Record<
-  CRITERION_CATEGORY,
-  CriterionCategoryMeta
-> = {
+export const criterionCategoryConfig = {
   [CRITERION_CATEGORY.MEMBERSHIP_BEHAVIOR]: {
     label: '會員行為',
     description: '與會員註冊、加入相關的條件',
     icon: '👥',
-    criterionTypes: [CRITERION_TYPE.JOIN_MEMBER],
+    criterions: defineCriterions([joinMemberCriterion]),
   },
   [CRITERION_CATEGORY.PURCHASE_BEHAVIOR]: {
     label: '購買行為',
     description: '與訂單、消費相關的條件',
     icon: '💰',
-    criterionTypes: [CRITERION_TYPE.ORDER_VALUE, CRITERION_TYPE.TOTAL_PURCHASE],
+    criterions: defineCriterions([orderValueCriterion, totalPurchaseCriterion]),
   },
   [CRITERION_CATEGORY.ENGAGEMENT_BEHAVIOR]: {
     label: '互動行為',
     description: '與用戶互動、活躍度相關的條件',
     icon: '📊',
-    criterionTypes: [],
+    criterions: defineCriterions([]),
   },
-}
+} as const satisfies Record<CRITERION_CATEGORY, CriterionCategoryMeta>
